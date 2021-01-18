@@ -15,13 +15,12 @@
 
 #include "zcommon.acs"
 
-#include "samu_tools.ach"
+#include "samu_tools.acs"
 
 //map setup
 script 91 OPEN
 {
-	// setup techflags
-	setupTerminals();
+	SFPlus_DefaultVars();
 	f_SurvivalLastLevel = 11;
 }
 

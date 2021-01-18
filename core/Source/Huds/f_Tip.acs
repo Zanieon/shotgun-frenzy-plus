@@ -17,8 +17,8 @@
 #import "fp_ptdir.acs"
 
 #include "zcommon.acs"
-#include "acsutils.ach"
-#include "samu_tools.ach"
+#include "acsutils.acs"
+#include "samu_tools.acs"
 
 
 
@@ -33,6 +33,7 @@
 
 function void f_TipShow (str l_Image, str l_Text1, str l_Text2, int l_Type)
 {
+	//log(s:"(f_tip): f_tipShow is depercarted, please use Notify_Message. Thank you.");
     // local containers
     int l_Position;
     int l_ID;
@@ -181,7 +182,7 @@ script 166 (int l_Position, int l_TipQue_Selection, int l_ID)
 	do{ delay(1);}while (p_TipProcess[slot]);
     
     // re enable the ion cannon
-	Tech_Set(FP_TECH_MARCOM_IONCAN, FP_TECHF_DONE);
+	Tech_Set(TECH_MARCOM_IONCAN, TECHF_DONE);
 }
 
 // pulse rage charge
@@ -207,7 +208,7 @@ script 168 (int l_Position, int l_TipQue_Selection, int l_ID)
 	do{ delay(1);}while (p_TipProcess[slot]);
     
     // re enable the core stuff
-	Tech_Set(FP_TECH_MARCOM_CPULSE, FP_TECHF_DONE);
+	Tech_Set(TECH_MARCOM_CPULSE, TECHF_DONE);
 }
 
 // screen flash
@@ -427,6 +428,15 @@ function void Notify_MessageSlot(str what1, str what2, int img, int set, int slo
 	
 	ambientsound("patch/newmessage", 56);
 	Notify_Show(what1, what2, img, id, pos, set);
+}
+
+function void Notify_CommMarker(str what, str img, str snd){
+	Notify_Message("New Objetive!", what, img, 0);
+	ambientsound(snd, 125);
+}
+
+function void Notify_Reward(str what, str img){
+	Notify_Message(what, "Ha been rewarded to your team!", img, TIP_NOTIFY_COLORSET_GOOD);
 }
 
 function void Notify_Research(str what, str img){

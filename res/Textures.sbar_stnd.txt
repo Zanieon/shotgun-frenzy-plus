@@ -120,6 +120,25 @@ Graphic "MINESI_1", 29, 23
 	Patch "IMIN0", -1, -6
 }
 
+Graphic "GREEDI_1", 25, 25
+{
+	XScale 2.300
+	YScale 2.300
+	Patch "ITP3A0", 0, 0
+}
+
+
+Graphic "GREEDI_0", 25, 25
+{
+	XScale 2.000
+	YScale 2.000
+	Patch "ITP3A0", 0, 0
+	{
+		Alpha 0.40
+		Style Add
+	}
+}
+
 Graphic "100HPI_0", 25, 25
 {
 	XScale 2.000
@@ -365,34 +384,6 @@ Graphic "EXPBR0", 486, 11
 	{
 		FlipX
 	}
-}
-
-Graphic "HUDCREIC", 32, 32
-{
-	XScale 1.600
-	YScale 1.600
-	Patch "HUDCREIC", 0, 0
-}
-
-Graphic "HUDPDHIC", 32, 32
-{
-	XScale 1.600
-	YScale 1.600
-	Patch "HUDPDHIC", 0, 0
-}
-
-Graphic "HUDUPGIC", 32, 32
-{
-	XScale 1.600
-	YScale 1.600
-	Patch "HUDUPGIC", 0, 0
-}
-
-Graphic "HUDKILIC", 32, 32
-{
-	XScale 1.600
-	YScale 1.600
-	Patch "HUDKILIC", 0, 0
 }
 
 // End of texture definitions

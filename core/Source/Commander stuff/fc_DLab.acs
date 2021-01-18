@@ -14,7 +14,8 @@
 #import "fp_ptdir.acs"
 
 #include "zcommon.acs"
-#include "samu_tools.ach"
+#include "acsutils.acs"
+#include "samu_tools.acs"
 // build
 script 400 (void)
 {
@@ -40,14 +41,14 @@ script 400 (void)
     spawnspot("TurretBase", 154, 0, 0);
     
     // set techflag
-	Tech_Set(FP_TECH_MARCOM, FP_TECHF_DONE);
+	Tech_Set(TECH_MARCOM, TECHF_DONE);
     
     // constructed message
     //f_TipShow ("BUTTON", "Marine Command", "Construction Complete!", 1);
     
     // check bridge
     delay(35 * 2);
-    if (Tech_isDone(FP_TECH_MARCOM) && Tech_isDone(FP_TECH_MECHFA) &&
+    if (Tech_isDone(TECH_MARCOM) && Tech_isDone(TECH_MECHFA) &&
 		c_BridgeStatus_4 == 0 && f_Gametype != 5)
     {
         c_BridgeStatus_4 = 1;
@@ -70,12 +71,12 @@ script "SFPlus_CoreRecharge" (int delay_time){
 	ACS_NamedExecuteAlways("SFPlus_ProgressScript",0, FP_PTID_CPULSE, delay_time, slot);
 	do{ delay(1); }while (p_TipProcess[slot]); // Wait for it.
 	
-	Tech_Set(FP_TECH_MARCOM_CPULSE, FP_TECHF_DONE);
+	Tech_Set(TECH_MARCOM_CPULSE, TECHF_DONE);
 }
 
 script "SFPlus_CorePulse" (int pulse_cmd)
 {	// A Generalized script for all of the core pulses.
-	if(Tech_isLock(FP_TECH_MARCOM_CPULSE)){
+	if(Tech_isLock(TECH_MARCOM_CPULSE)){
 		Notify_Message("Core pulse failed",
 		"The core pulse is still charging!", "INFO", 3);
 		terminate;
@@ -84,7 +85,7 @@ script "SFPlus_CorePulse" (int pulse_cmd)
     ambientsound("cv/corepulse", 125);
     
     // disable use of core weapons
-	Tech_SetDone(FP_TECH_MARCOM_CPULSE, FP_TECHF_LOCK);
+	Tech_SetDone(TECH_MARCOM_CPULSE, TECHF_LOCK);
 	
 	str pulse_name;
 	int execute;
@@ -135,18 +136,38 @@ script "SFPlus_CorePulse" (int pulse_cmd)
 // Harms all demons with 500 of damage.
 script FP_MCOM_CPULSE_CRIPPLE (void)
 {
-	thing_damage(110, 500, 5);
-	thing_damage(111, 500, 5);
-	thing_damage(112, 500, 5);
-	thing_damage(113, 500, 5);
-	thing_damage(114, 500, 5);
+	giveActorInventory(110, "FPMToken_NoCount", 1);
+	giveActorInventory(111, "FPMToken_NoCount", 1);
+	giveActorInventory(112, "FPMToken_NoCount", 1);
+	giveActorInventory(113, "FPMToken_NoCount", 1);
+	giveActorInventory(114, "FPMToken_NoCount", 1);
+	// Temporaly disable the credit earning of these monsters.
+	delay(2);
+	thing_damage(110, 500, "NoCount");
+	thing_damage(111, 500, "NoCount");
+	thing_damage(112, 500, "NoCount");
+	thing_damage(113, 500, "NoCount");
+	thing_damage(114, 500, "NoCount");
+	delay(2);
+	// Re-activate the credit earning.
+	takeActorInventory(110, "FPMToken_NoCount", 1);
+	takeActorInventory(111, "FPMToken_NoCount", 1);
+	takeActorInventory(112, "FPMToken_NoCount", 1);
+	takeActorInventory(113, "FPMToken_NoCount", 1);
+	takeActorInventory(114, "FPMToken_NoCount", 1);
 }
 
 // core pulse: Smite (NEW!)
 // Harms any demon inside of the risked sector with 3000 hp.
 script FP_MCOM_CPULSE_SMITE (void)
 {
-	thing_damage(110 + g_Status, 3000, 5);
+	giveActorInventory(114, "FPMToken_NoCount", 1);
+	// Temporaly disable the credit earning of these monsters.
+	delay(2);
+	thing_damage(110 + g_Status, 3000,  "NoCount");
+	delay(2);
+	// Re-activate the credit earning.
+	takeActorInventory(110, "FPMToken_NoCount", 1);
 }
 
 // halt pulse

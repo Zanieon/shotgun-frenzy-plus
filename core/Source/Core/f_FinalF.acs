@@ -11,7 +11,9 @@
 #import "f_AIDir.acs"
 #import "fl_techs.acs"
 #include "zcommon.acs"
-#include "samu_tools.ach"
+#include "acsutils.acs"
+#include "samu_tools.acs"
+
 
 // define a useful variable (for dev purposes only, use to instantly goto the boss)
 int instant_guardian = 0;
@@ -22,16 +24,56 @@ script 231 (void)
 	// get current attributes
 	int health = getactorproperty(0, APROP_Health);
 	int alpha = getactorproperty(0, APROP_Alpha);
-	int adjustedCount = PlayerCount()/2;
+	int damage_factor = 1.0;
+	//int adjustedCount = PlayerCount()/2;
+	int extrahealth = 0;
 	
 	// auto adjust monsters based on player count
 	if (alpha != 0.9 && PlayerCount() > 2){
-		setactorproperty(0, APROP_Health, health*adjustedCount);
+		extrahealth = (health*((PlayerCount() - 2)*(fixedDiv(m_hpmult, 100.0))))>>16;
+		damage_factor = 1.0 + (PlayerCount() - 2)*fixedDiv(p_dmgmult, 100.0);
+		/*
+		log(s:"Health: ", d:health, 
+		s:"\nExtra health: ", d:extrahealth, 
+		s:"\nPlayer count: ", d:playercount(),
+		s:"\nHP Multipler: ", f:m_hpmult,
+		s:"\nTotal health: ", d:(health + extrahealth),
+		s:"\nDamage Multipler: ", f:p_dmgmult,
+		s:"\nDamage Factor: ", f:damage_factor);
+		*/
+		
+		// [Samu] Fuck your 50% health increase!, let the server modify that!
+		//setactorproperty(0, APROP_Health, health*adjustedCount);
+		setactorproperty(0, APROP_Health, health + extrahealth);
+		setactorproperty(0, APROP_DamageFactor, damage_factor);
 		setactorproperty(0, APROP_Alpha, 0.9);
+		
 		if (f_PercentFast > random(0,99)) {
 			setactorproperty(0, APROP_Speed, getactorproperty(0,APROP_Speed)*2);
 		}
 	}
+	ACS_NamedExecuteAlways("SFPlus_MonsterScript", 0);
+}
+
+Script "SFPlus_MonsterScript" (void){
+	int hp = getActorProperty(0, APROP_Health);
+	int playercount_last = -1;
+	int damage_factor = 0.0;
+	int pdmg_mult = a_GetCvarFixed("sfp_playerdmgmult");
+	do{
+		hp = getActorProperty(0, APROP_Health);
+			if(playercount_last != PlayerCount()){
+				damage_factor = (PlayerCount() - 2)*fixedDiv(p_dmgmult, 100.0);
+				if(damage_factor > 0)
+					setactorproperty(0, APROP_DamageFactor, 1.0 + damage_factor);
+				else 
+					setactorproperty(0, APROP_DamageFactor, 1.0);
+				/*log(s:"Player Count (debug-var): ", d:debug_var,
+				s:"\nCurrent DMG Factor: ", f:getActorProperty(0, APROP_DamageFactor));*/
+			}
+		playercount_last = PlayerCount();
+		delay(1);
+	}while(hp > 0);
 }
 
 // final fight
@@ -43,21 +85,17 @@ script 107 OPEN
     // wait until the game is active
     while(g_Status == 0)
         delay(35);
-    // survival?
-    if(f_Gametype == 5){
+	
+	//InitDB_Debug();
+    
+    if(f_Gametype == 5){ // survival?
          acs_terminate(107,0);
     }
     if (instant_guardian == 0)
     {
         // wait desired time minutes
-        if (f_GameLength > 10){
-        delay(35 * 60 * 10);
-        g_TenMinMark = 1;
-        delay(35 * 60 * f_GameLength - 10);
-        }
-        else{
+        
         delay(35 * 60 * f_GameLength);
-        }
         
         // five minute warning
 		Notify_Message("GUARDIAN WAVE", "2 minutes remaining!", "DEMONT", 0);
@@ -73,11 +111,13 @@ script 107 OPEN
 
 script 108 (int l_RemainingMonsters)
 {
+	if(c_NukeLaunched) Terminate; // Don't execute this if we're nuking the map.
+
 	int bonusPoints;
     guardianActive = 1;
     // collect AI director information and turn it off
     g_SkillScore = f_AIDir_Check();
-	log(s:"Score catched: ", d:g_SkillScore);
+	//log(s:"Score catched: ", d:g_SkillScore);
 	// [Samu] Give it some bonus credits and ups.
 	if(g_Status == 1){
 		bonusPoints += 30;
@@ -101,26 +141,23 @@ script 108 (int l_RemainingMonsters)
 	
 	g_SkillScore += bonusPoints;
 	
-	log(s:"Score before the guardian wave: ", d:g_SkillScore);
+	//log(s:"Score before the guardian wave: ", d:g_SkillScore);
     acs_terminate(13, 0);
     acs_terminate(120, 0); // Shuts The core-rambling.
-    acs_terminate(100, 0); // Shuts the sector main loop.
+	ACS_NamedTerminate("SFPlus_SecManMainLoop", 0); // Shuts the sector main loop.
+	
     acs_terminate(102, 0); // Shuts The loss sector script if already executed.
     acs_terminate(103, 0); // Shuts The reclaiming sector script if already executed.
 	
 	//[Samu] To shut up the counter.
 	acs_terminate(129, 0);
-    
-    // deactivate cores
-    //thing_deactivate(101);
-    //thing_deactivate(102);
-    //thing_deactivate(103);
-    
+	
     g_Status = 4;
     g_GuardianMode = 1;
     thing_remove(101);
     thing_remove(102);
     thing_remove(103);
+	
     
     //f_TipShow ("DEMONT", "Guardian Appearence", "Kill the remaining demons!", 0);
     Notify_Message("GUARDIAN WAVE", "Kill the remaining demons!", "DEMONT", 0);
@@ -161,11 +198,15 @@ script 108 (int l_RemainingMonsters)
         floor_lowertonearest(104, f_Doorspeed);
     }
     
+	thing_activate(104); // If the last core was de-activated...
+	delay(1);
         thing_hate(110, 104, 0);
         thing_hate(111, 104, 0);
         thing_hate(112, 104, 0);
         thing_hate(113, 104, 0);
         thing_hate(114, 104, 0);
+		
+	
 	
 	int mtotal, mkilled;
         
@@ -200,12 +241,9 @@ script 108 (int l_RemainingMonsters)
     
     // display message
 	Notify_Message("GUARDIAN WAVE", "Arrived!", "DEMONT", 0);
-    
-	
-	// kill all scripts!
-	acs_terminate(120, 0);
 	
 	g_GuardianWave = True;
+	g_Status = 4;
 	
     // spawn boss script
     if(c_NukeLaunched != 1){
@@ -215,11 +253,12 @@ script 108 (int l_RemainingMonsters)
 
 function bool GuardianWave_LoopCond(int surv){
 	bool cond_1 = thingcount(0, 118) > surv;
-	bool cond_2 = thingcount(0, 111) > surv;
-	bool cond_3 = thingcount(0, 112) > surv;
-	bool cond_4 = thingcount(0, 113) > surv;
-	bool cond_5 = thingcount(0, 114) > surv;
-	bool win_cond = (cond_1 + cond_2 + cond_3 + cond_4 + cond_5) < 1;
+	bool cond_2 = thingcount(0, 110) > surv;
+	bool cond_3 = thingcount(0, 111) > surv;
+	bool cond_4 = thingcount(0, 112) > surv;
+	bool cond_5 = thingcount(0, 113) > surv;
+	bool cond_6 = thingcount(0, 114) > surv;
+	bool win_cond = (cond_1 + cond_2 + cond_3 + cond_4 + cond_5 + cond_6) < 1;
 
 	return (thingcount(0, 118) > surv || 
 			thingcount(0, 110) > surv || 
@@ -239,15 +278,22 @@ Script "SFPlus_GuardianWaveChecker" (int surv){
 		thing_hate(114, 104, 0);
 		
 	int mkilled, mTotal; 
-	int timeout = 300; // 5 Minutes (in tics) before moving to next map.
+	int timeout = 300; // 5 Minutes (in secs) before moving to next map.
 	int remains;
-    while(GuardianWave_LoopCond(surv) && timeout > 1){
+    while(GuardianWave_LoopCond(surv) && timeout > 0){
        //[Samu] Zandronum is dumb counting monsters.
 		
-		remains = thingcount(0, 118) + thingcount(0, 111) + thingcount(0, 112) + thingcount(0, 113) + thingcount(0, 114) - surv;
+		remains = thingcount(0, 118) + thingcount(0, 110) + thingcount(0, 111) + thingcount(0, 112) + thingcount(0, 113) + thingcount(0, 114) - surv;
 		
 		f_BigCenterTipBold(strparam(s:"Monsters remaining: ", d:remains), CR_BRICK);
 		if(g_GameOver) Terminate;
+		// Keep hatin'
+		thing_hate(118, 104, 4);
+		thing_hate(110, 104, 4);
+		thing_hate(111, 104, 4);
+		thing_hate(112, 104, 4);
+		thing_hate(113, 104, 4);
+		thing_hate(114, 104, 4);
 		delay(35 * 1);
 		timeout--;
 	}
@@ -284,6 +330,9 @@ script 125 (int l_Condition)
     int l_SkillLevel = -1;
     int g_FinalSkillScore = 0;
     
+	ACS_Terminate(100,0); // Kill the sector management survival script if used at all.
+	acs_Terminate(129,0); // Kill the timer counter.
+	
 	g_GameOver = true; // Stops the guardian checker loop.
 	g_GameEnding = l_Condition;
 	
@@ -337,18 +386,7 @@ script 125 (int l_Condition)
     if (l_Condition == 2)       g_FinalSkillScore += 15;
     if (l_Condition == 3)       g_FinalSkillScore += 10;
     if (l_Condition == 4)       g_FinalSkillScore -= 20;
-	
-	//[Samu] you think you can get a good score by dying a lot!?
-	if(PlayerCount() == 0) g_FinalSkillScore = 0;
-	else g_FinalSkillScore -= (p_TotalPlayerDeaths / PlayerCount())/ 5;
-	// Well not on my watch!
-	
-	log(s:"Test: ", d:g_FinalSkillScore, s:" %");
     
-    // check limits
-    if (g_FinalSkillScore > 100)     g_FinalSkillScore = 100;
-    if (g_FinalSkillScore < 0)       g_FinalSkillScore = 0;
-	
 	str msg;
 	switch(l_Condition){
 		case 1: msg = "Nukes sloves everything"; break;
@@ -357,6 +395,18 @@ script 125 (int l_Condition)
 		case 4: msg = "Soon, ashes will remain..."; break;
 	}
 	
+	//[Samu] you think you can get a good score by dying a lot!?
+	if(PlayerCount() == 0) g_FinalSkillScore = 0;
+	else g_FinalSkillScore -= (p_TotalPlayerDeaths / PlayerCount())/ 5;
+	// Well not on my watch!
+	
+	// check limits
+    if (g_FinalSkillScore > 100)     g_FinalSkillScore = 100;
+    if (g_FinalSkillScore < 0)       g_FinalSkillScore = 0;
+	
+	// Debug info.
+	log(s:"Monster Kills: ", d:getlevelinfo(LEVELINFO_KILLED_MONSTERS), s:" kills.");
+	log(s:"Players Died ", d:p_TotalPlayerDeaths, s:" times.");
 	log(s:"Skill Percent: ", d:g_finalSkillScore, s:" %");
     
     // display killed demons

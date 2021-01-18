@@ -10,8 +10,8 @@
 #import "f_intDB.acs"
 #import "fc_AStr.acs"
 #include "zcommon.acs"
-#include "acsutils.ach"
-#include "samu_tools.ach"
+#include "acsutils.acs"
+#include "samu_tools.acs"
 
 int fp_Price[499][2]; // [Samu] I'll do a clone of this.
 int fp_PriceStack = 0;
@@ -199,11 +199,13 @@ script "SFPlus_DefinePrices" Open
 	//Mech prices
 	Prices_add("pr_mech", 				12000);
 	Prices_add("pr_mu_nails", 			2500);
-	Prices_add("pr_mu_rockets", 		4000);
+	Prices_add("pr_mu_rockets", 		5500);
 	Prices_add("pr_mu_armor", 			5000);
 	Prices_add("pr_mu_speed", 			3000);
 	Prices_add("pr_mu_life_save", 		30000);
 	Prices_add("pr_mu_self_destruct", 	8000);
+	Prices_add("pr_mu_auto_repair", 	4000);
+	Prices_add("pr_mu_efficiency", 		15000);
 	
 	//Play Up. prices
 	Prices_add("pr_pu_powupupgrade",		4);

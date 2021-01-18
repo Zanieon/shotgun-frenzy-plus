@@ -14,23 +14,12 @@
 
 #include "zcommon.acs"
 #import "fl_techs.acs"
-#include "samu_tools.ach"
+#include "samu_tools.acs"
 // setup techflags
 script 91 OPEN
 {
+	SFPlus_DefaultVars();
 	spawnspot("TurretPlasma", 12);
-	f_Startcash =   2500;                   // player starting cash, 2500 is the default
-	c_Startcash =   0;                      // starting cash for the commander (SF maps only)
-	f_Doortype =    0;                      // 0 is a normal door, 1 is a floor based door
-	f_Doorspeed =   50;                     // speed of the door opening, 50 is the default
-	f_GameLength =  9;                     // Gametime in minutes, +2 min after guardian warning, 28 default (30 min gametime) 18
-	f_AISkillMultiplier = 3;               // increase in levels, higher means harder (aka: the RapeFactor variable)
-
-	f_Cacodemons = 0;
-	f_AdaptiveSpawning = 0;
-	
-	readconsole();
-	setupTerminals();
 }
 // final boss
 script 90 (void)
@@ -56,14 +45,21 @@ script 90 (void)
        spawnspot("SpiderImpHead", 117, 118, 0);
        spawnspot("SpiderImpHead", 15, 118, 0);
         spawnspot("Cacodemon", 7, 118, 0);
-        spawnspot("Cacodemon", 8, 118, 0);
+        spawnspot("Cacodemon", 8, 6118, 0);
+		ThrustThingZ(6118, 100, 0, 0);// Push them up, just to make it look like an ambush.
+		Thing_ChangeTID(6118, 118);
+		delay(35 * 1);
+		spawnspot("Cacodemon", 8, 6118, 0);
+		ThrustThingZ(6118, 100, 0, 0);// Push them up, just to make it look like an ambush.
+		Thing_ChangeTID(6118, 118);
+		
         if (PlayerCount() > 4){
         	spawnspot("Cyberdemon", 9, 118, 0);
         }
-        ticker++;
+		thing_hate(118, 104, 4);
         delay(35 * 1);
-        thing_hate(118, 104, 4);
-        delay(35 * 20);
+		ticker++;
+        delay(35 * 18);
     }
     ticker = 0;
     ACS_NamedExecute("SFPlus_GuardianWaveChecker", 0, 15);
@@ -85,11 +81,16 @@ script 1 OPEN
 
 
 
-
+bool tank_used = false;
 
 // custom mech script
 script 11 (void)
 {
+	if(tank_used) {
+		print(s:"Yikes!, somebody stole it first!");
+		terminate;
+	}
+	tank_used = true;
 	thing_remove(11);
     // welcome message
     setfont("CONFONT");
@@ -104,15 +105,16 @@ script 11 (void)
     // change skin and class
     //morphactor(0, "TankPlayer", "", 999999, 2, "", "");
     giveinventory("MechMorph",1);
-    giveinventory("TankGunAdvanced", 1);
+	
+	// Give it some instant upgrades.
+	giveinventory("Mechup_Nails", 3);
+	giveinventory("Mechup_Rockets", 3);
+    giveinventory("TankGun", 1);
+	
+	
     
     // give more health
-    if (p_MechUpgradeArmor[playernumber()] == 0){
-   	 setactorproperty(0, APROP_HEALTH, 2500);
-    }
-    else{
-   	 setactorproperty(0, APROP_HEALTH, 3500);
-    }
+    setactorproperty(0, APROP_HEALTH, 3500);
     
     // setup tank hud
     sethudsize(s_ScreenSize[0], s_ScreenSize[1], s_ScreenSize[2]);
@@ -129,10 +131,12 @@ script 11 (void)
         else
             setfont("TANKH1");
         
-        hudmessage(s:"a"; 0, 201, 0, 400.0, 0.1, 1.0);
+        hudmessage(s:"a"; HUDMSG_LAYER_UNDERHUD, 201, 0, 400.0, 0.1, 1.0);
         
         // switch to tank weapon
-       setweapon("TankGunAdvanced");
+		
+		
+       setweapon("TankGun");
         
         // display tank health
         setfont("CONFONT");
@@ -142,6 +146,7 @@ script 11 (void)
         if (getactorproperty(0, APROP_HEALTH) < 1000)
         {
 	//acs_execute(13, 0, 0, 0, 0);
+		p_TankSlot[playernumber()] = 0;
              takeinventory("MechMorph",1);
     hudmessagebold(s:""; 0, 201, 0, 400.0, 0.1, 1.0);
             Unmorphactor(0, 1);
@@ -156,8 +161,6 @@ script 11 (void)
     
     // purge
     hudmessagebold(s:""; 0, 201, 0, 400.0, 0.1, 1.0);
-    while(1){
-       delay(35*99);
-    }
+	p_TankSlot[playernumber()] = 0;
     
 }

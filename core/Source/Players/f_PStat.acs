@@ -13,9 +13,12 @@
 #import "f_PMenP.acs"
 #import "fl_techs.acs"
 #import "fl_wdir.acs"
+#import "fp_credd.acs"
+#import "fp_cmdevt.acs"
 
 #include "zcommon.acs"
-#include "samu_tools.ach"
+#include "acsutils.acs"
+#include "samu_tools.acs"
 
 str Stats_PlayerNames[32];
 
@@ -32,6 +35,7 @@ if (g_Status == 5){
 	thing_hate(114, 104, 4);
 }
 else{
+	//log(s:"Hating on sector: ", d:g_Status);
 	thing_hate(109, 100+g_Status, 4);
 	thing_hate(110, 100+g_Status, 4);
 	thing_hate(111, 100+g_Status, 4);
@@ -61,7 +65,6 @@ else{
     // display message
     if(PlayerCount() < 3){
 		   Notify_Player_Death();
-          //f_TipShow("DEATH", "", "Has Fallen!", 10);
     }
 	
 	// a nice pretty message for the loser to make them think on the bright side
@@ -122,7 +125,7 @@ script 53 ENTER
 	TakeInventory("PlayerKilledDemon", 0xFFFFFFF);
 	TakeInventory("P_Backpack", 0xFFFFFFF);
 	// Just in case
-	//ACS_ExecuteAlways("PersonalBP_Reset", 0);
+	ACS_NamedExecuteAlways("PersonalBP_Reset", 0);
     clearinventory();
 
     // give the player his/her boomstick and beretta
@@ -131,23 +134,25 @@ script 53 ENTER
     setweapon("Boomstick");
 
     int creditmult = GetCVar("sf_creditcorrection");
-	int StartCashCvar = GetCVar("sf_startcash");
-    p_Credits[playernumber()] = f_Startcash + (10 + creditmult) * Timer() / 35;
-    if (p_Credits[playernumber()] > 20000)
+	
+	int play = playernumber();
+    p_Credits[play] = cond(g_Status != 0,
+							f_Startcash + (10 + creditmult) * Timer() / 35,
+							f_Startcash);
+    if (p_Credits[play] > 20000)
     {
-      p_Credits[playernumber()] = 20000;
+      p_Credits[play] = 20000;
     }
-    p_Rank[playernumber()] = 0;
-    p_Exp_Points[playernumber()] = 0;
-    p_Exp[playernumber()] = 0;
-    p_KickSlot[playernumber()] = 0;
-    p_MechUpgradeWeapons[playernumber()] = 0;
-    p_MechUpgradeArmor[playernumber()] = 0;
-    p_TankSlot[playernumber()] = 0;
-	p_StreakLevel[playernumber()] = 0;
-	//[Samu] Bruh...
-    //ConsoleCommand("setslot 8 Flamer FlamerS BFG BFGS BoomerCannon");
-    //f_TipShow("PLAYER", "", "Has entered the game...", 10);
+	p_dropCredits_Starter[play] = p_Credits[play];
+	
+    p_Rank[play] = 0;
+    p_Exp_Points[play] = 0;
+    p_Exp[play] = 0;
+    p_KickSlot[play] = 0;
+    p_TankSlot[play] = 0;
+	p_StreakLevel[play] = 0;
+	p_Mechtimer[play] = -2;
+	
     Notify_Player_Enter();
 	
 	//Save the name for disconnect cases.
@@ -163,6 +168,12 @@ script 54 RESPAWN
 	
     // give players the 'player' tid
     thing_changetid(0, 990+PlayerNumber());
+	// Set the max health upon spawn.
+	
+	setactorproperty(0, APROP_SpawnHealth, getActorProperty(0, AProp_Health));
+	
+	ACS_NamedExecute("Auto-Use Items", 0);
+    p_Streak[playernumber()] = 0; // Reset the kill-streak.
     
     // take boomer cannon incase it glitched
     takeinventory("BoomerCannon", 1);
@@ -188,24 +199,14 @@ script 54 RESPAWN
     delay(15);
     //t3hdoom: Originally didn't give any ammo if there's no armory. Let's give them ammo on spawn regardless
     acs_execute(106, 0, 3, 1, 0);
-	ACS_NamedExecute("Auto-Use Items", 0);
-    p_Streak[playernumber()] = 0; // Reset the kill-streak.
 	
-	
-	
-    // players a bot? delay before spawning
-	// [Samu] I dont care.
-	/*
-    if (playerisbot(playernumber()))
-    {
-        delay(35 * random(3, 15));
-        acs_executealways(104, 0, 0, 1, 0);
-    }
-    */
-    // rehate for survival gametype
-    //thing_hate(110, g_Status + 100, 4);
-	
-	
+	//[Samu] If you die, the teleport script will not activate the spawnshield effet.
+	// So to counter that, I should place it here.
+	if(CheckInventory("PlayUp_SpawnShield")){
+		TakeInventory("PlayUp_SpawnShield_Power", 1);
+		delay(1);
+		giveInventory("PlayUp_SpawnShield_Activate", 1);
+	}
 }
 
 script "SFPlus_NameUpdate" ENTER {
@@ -228,6 +229,15 @@ script 57 (int num) DISCONNECT
 	// Clean things leftovers by player.
 	Thing_Damage(990+num, 90000000, MOD_UNKNOWN);
 	Thing_Remove(990+num);
+	
+	Thing_Damage(11000+num, 90000000, MOD_UNKNOWN);
+	Thing_Remove(11000+num);
+	
+	Thing_Damage(10000+num, 90000000, MOD_UNKNOWN);
+	Thing_Remove(10000+num);
+	
+	Thing_Damage(15000+num, 90000000, MOD_UNKNOWN);
+	Thing_Remove(15000+num);
 	
 	Thing_Damage(30000+num, 90000000, MOD_UNKNOWN);
 	Thing_Remove(30000+num);
@@ -268,109 +278,66 @@ script 56 (int weapon) //Set weapon to last (separated this script from the resp
 
 }
 
+int auto_research[20][2];
+int stack = 0;
+//int acs_level = 0;
+function void AutoResearch_Add(int event_id, int kills_needed){
+	auto_research[stack][0] = event_id;
+	auto_research[stack][1] = kills_needed;
+	stack++;
+}
 
+function void AutoResearch_DoIt(int level){
+	CmdEvent_Execute(auto_research[level][0], 0);
+}
 
+function bool AutoResearch_Check(int level){
+	return getlevelinfo(LEVELINFO_KILLED_MONSTERS) > auto_research[level][1];
+}
+/*
+script "SFPlus_AutoResearchLevel" (int lvl){
+	acs_level = lvl;
+}*/
 
 script 249 OPEN
 {
 	delay(35*3);
-	
+	CmdEvent_Initialize();
+	AutoResearch_Add(CMDEVT_REWARD_HEALTH1, 100);
+	AutoResearch_Add(CMDEVT_REWARD_STIMPK, 	250);
+	AutoResearch_Add(CMDEVT_REWARD_ARMOR, 	500);
+	AutoResearch_Add(CMDEVT_REWARD_AMMOBP, 	800);
+	AutoResearch_Add(CMDEVT_REWARD_HEALTH2, 1200);
+	AutoResearch_Add(CMDEVT_REWARD_BOOMRN, 	1700);
+	AutoResearch_Add(CMDEVT_REWARD_PUMP1, 	2300);
+	AutoResearch_Add(CMDEVT_REWARD_SPEEDB, 	3000);
+	AutoResearch_Add(CMDEVT_REWARD_RESISB, 	3800);
+	AutoResearch_Add(CMDEVT_REWARD_REGENB, 	4700);
+	AutoResearch_Add(CMDEVT_REWARD_PUMP2, 	5600);
+			
 	// make sure it is not a commander gametype
 	if (f_UseScoreSystem == 1){
 		int l_CurrentLevel;
+		//int acs_last = acs_level;
 		while(1){
 			// display
 			setfont("CONFONT");
 			sethudsize(s_ScreenSize[0], s_ScreenSize[1], s_ScreenSize[2]);
 			hudmessage(s:"Team score: ",d:getlevelinfo(LEVELINFO_KILLED_MONSTERS); 1, 256, CR_TAN, 400.0, 20.1, 7.0);
+			/*
+			if(acs_level != acs_last){ // Debuggy
+				l_currentlevel = acs_level;
+				acs_last = acs_level;
+			}*/
 			
-			
-			
-			// upgrade level 1
-			if (l_CurrentLevel == 0 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 100){
-				l_CurrentLevel ++;
-				Tech_Set(FP_TECH_GENLAB_HEALTH1, FP_TECHF_DONE);
-				f_TipShow ("CM12", "Human Engineering Phase 1", "Has been rewarded to your team!\nHealth increased", 1);
+			if(AutoResearch_Check(l_CurrentLevel)){
+				AutoResearch_DoIt(l_CurrentLevel);
+				l_CurrentLevel++;
 			}
 			
+			if(l_CurrentLevel == stack) break;
 			
 			
-			// upgrade level 2
-			if (l_CurrentLevel == 1 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 450){
-				l_CurrentLevel ++;
-				Tech_Set(FP_TECH_GENLAB_ARMOR, FP_TECHF_DONE);
-				f_TipShow ("CM16", "Steel Plating", "Has been rewarded to your team!\nArmor provided", 1);
-			}
-			
-			
-			
-			// upgrade level 3
-			if (l_CurrentLevel == 2 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 800){
-				l_CurrentLevel ++;
-				Tech_Set(FP_TECH_ARMORY_AMMOBP, FP_TECHF_DONE);
-				f_TipShow ("CM29", "Ammo Backpack", "Has been rewarded to your team!\nDouble ammo capacity", 1);
-			}
-			
-			
-			
-			// upgrade level 4
-			if (l_CurrentLevel == 3 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 1050){
-				l_CurrentLevel ++;
-				Tech_Set(FP_TECH_ARMORY_BOOMRN, FP_TECHF_DONE);
-				f_TipShow ("CM28", "Boomshot Rounds", "Has been rewarded to your team!\nIncreased weapon damage", 1);
-			}
-			
-			
-			
-			// upgrade level 5
-			if (l_CurrentLevel == 4 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 1500){
-				l_CurrentLevel ++;
-				Tech_Set(FP_TECH_GENLAB_HEALTH2, FP_TECHF_DONE);
-				f_TipShow ("CM13", "Human Engineering Phase 2", "Has been rewarded to your team!\nHealth increased", 1);
-			}
-			
-			
-			
-			// upgrade level 6
-			if (l_CurrentLevel == 5 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 2300){
-				l_CurrentLevel ++;
-				Tech_Set(FP_TECH_REFINE_PUMP1, FP_TECHF_DONE);
-				
-				f_TipShow ("CM56", "Processing Phase 1", "Has been rewarded to your team!\nCredit bonus", 1);
-			}
-			
-			
-			
-			// upgrade level 7
-			if (l_CurrentLevel == 6 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 3800){
-				l_CurrentLevel ++;
-				
-				Tech_Set(FP_TECH_GENLAB_RESISB, FP_TECHF_DONE);
-				
-				f_TipShow ("CM17", "Resister Unit", "Has been rewarded to your team!\nDamage Resistance", 1);
-			}
-			
-			
-			
-			// upgrade level 8
-			if (l_CurrentLevel == 7 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 4500){
-				l_CurrentLevel ++;
-				
-				Tech_Set(FP_TECH_GENLAB_REGENB, FP_TECHF_DONE);
-				
-				f_TipShow ("CM18", "Asorber Unit", "Has been rewarded to your team!\nHealth regeneration", 1);
-			}
-			
-			
-			
-			// upgrade level 9
-			if (l_CurrentLevel == 8 && getlevelinfo(LEVELINFO_KILLED_MONSTERS) > 5000){
-				l_CurrentLevel ++;
-				Tech_Set(FP_TECH_REFINE_PUMP2, FP_TECHF_DONE);
-				
-				f_TipShow ("CM56", "Processing Phase 2", "Has been rewarded to your team!\nCredit bonus", 1);
-				break;
-			}
 			delay(35*5);
 		}
 	}
@@ -384,5 +351,5 @@ script 769 (void){
 
 // [Samu] Check if i am on a tank.
 script 781 (void){
-	SetResultValue((CheckInventory("TankGun") || CheckInventory("TankGunAdvanced")) && p_TankSlot[playernumber()] == 2);
+	SetResultValue(checkinventory("GotTank") || ((CheckInventory("TankGun") || CheckInventory("TankGunAdvanced")) && p_TankSlot[playernumber()] == 2));
 }

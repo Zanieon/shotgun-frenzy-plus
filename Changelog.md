@@ -2,6 +2,138 @@
 
 ## v0 - Before the beginning...
 
+#### -) (6 to 11 / 01 / 2021) [Relase! v0-t13] [Mech nerfs and fixes]
+	+) A new Mech Upgrade! Efficiency: Reduces the time on the repairings, rocket reloading and autorepair intervals.
+	*) Mech Rocket Upgrade price rises to 5500.
+	*) Slowed a bit the rocket reloading time for the Mech. You can restore it with the efficiency upgrade.
+	*) Returning the mech back to the base will have a delay penalty depending on the health. Just to discourage the insta-healing of the mechs.
+	*) The mech moves a bit more faster in the base level, but it's upgrades does less effect, maxing it up will make the tank run like a normal marine.
+	*) The mech exit at the entrance no longer will be instant. If you need to hop off the mech, pass to the entrance and press use. (It's still insta-exit)
+	*) Fixed up the cmd list, now it should show to the players.
+	*) Pistol now it should'nt use the same clip that uses the spitter. That and with other tweaks to it. (thanks BathySalts!)
+	*) Stimpacks now heals 20 hp.
+	*) Upgrade reminders show behavior has been changed too. Now they appear and shine.
+
+#### -) (1 to 3 / 01 / 2021) [Starting with a good feet]
+	*) Rewritten the CMD event handling system, and optimized the cmd terminal.
+	*) Turret Rail in the ammo terminal should be given after pursache once again.
+	*) Prosesing phase 1 and 2 can boost up the enemy bounty for the players and commander together!
+	*) Enemies killed with cripple pulse will not grant credits to the player. (However, the commander can gain credits for that)
+	*) Auto-Researching's Script has been revamped too, now notifying the players the new researchs on CF and SD maps! (Also, stimpacks and adrenaline can be given with this revamp.)
+	*) Other smoll fixes.
+	// 2020 was filled with updates, with more new mechanics, less bugs, and more. (with coronavirus and all ._.)
+	// So for a 2021 goal, I'll bring this mod up to the v1, the version where the maps can be added.
+	// I've still got some ideas left to add it in, so expect it to be updated =)
+
+#### -) (23 to 26 / 12 / 2020) [Winterish Hotfixes]
+	*) Fixed a glitch which let's you create turrets, but without checking the credits.
+	*) Now the commander should check the terrain, if the spawning of a turret or dispenser is being blocked, or placed in liquids (wip) the spawning will fail, but the team credits will be refunded.
+	*) Hidden some spamming on the server log console.
+	*) The turrets shall now delete themselves with the base included.
+	*) Now the kill-streak flow will not be interrupted by the building of a deployable item.
+	*) Spawnshield should work again (needs some testing though)
+	*) Pressing F12 (Coop Spy) will force you to look at the commander screen.
+	*) Small fix on the sf_doorholdtime cvar.
+	*) Removed the useless rune sync from the player upgrades. But this is'nt the last time you see it.
+	*) Other smoll fixes.
+
+#### -) (23 / 11 to 18 / 12 / 2020) [Relase! v0-t12] [Bye buy.py and play.py, Hello pack-o-daemon!]
+	// Miss me?
+	-) Like the commit said, the buy.py and play.py scripts are deleted.
+	+) But now they're replaced with a parallel project that I've been working since a month, pack-o-daemon!
+	// It's the build and play scripts, but in a GUI interface. Really it's the same thing.
+	*) Now the Samu-Terminal old folder structure is now back to action!
+	*) Renamed back the file extensions from .ach to .acs to make the pack-o-daemon acs compilation work.
+	*) Cyberdemons will no longer be harmed by their own rockets. However, they're vulnerable to the area-damage of explosives!
+	*) Updated the README.MD regarding about the pack-o-daemon addition.
+
+#### -) (13 - 14 - 15 / 11 / 2020) [SBARINFO and Mech related stuff perks]
+	*) Re-arranged the kill counters, for a better comprehension.
+	+) Now, a timer should be displayed when the mech is on cool-down phase on the normal status bar.
+	*) Now the timer should display correctly, forgot to add that extra second to make it work.
+	+) Small new icons for the normal status bar, only to reference the mech status.
+	*) Small fixes on the Mech buy page, on samu-terminal, also, you can check out the current upgrades you got so far.
+	*) Small touches on the Mech in cf04.
+	*) Since the plasma turret upgraded is overwhelming on cf04, the cacodemon waves from the rear attack will spawn more (and appear like a jumping ambush :D)
+
+#### -) (11 - 12 / 11 / 2020) [Map Doors, Sector Cap, Mech and HUD fixes.]
+	*) Now the doors should open-close properly in the SF maps!
+	+) Now, the old hud will display the mech status, which it shows the current time for re-using a mech!
+	*) Now, when you hop off the mech, you should wait a small cooldown of 15 seconds.
+	*) Small touches on the SF04 map. Cursed AF.
+	*) Mech users shall now gain experience and credits!
+	*) Some more fixes on the sector management scripts.
+	*) Moved the icons for the normal status bar a bit. It's a lil' bigger.
+	*) Now the kill streaks should be seen in the normal status bar.
+
+#### -) (10 / 11 / 2020) [Mechs touches and addons. SF04 map turrets fixed.]
+	*) Alright, map SF04's map turrets should be cleared and occupied correctly.
+	+) Now, you can look up the current mech upgrades when using a mech.
+	*) This time the Mech factory door can be used again to open the entrance, just like always.
+	*) The use key will no longer exit the vehicle inmediatly, but instead, you exit as long as you hold use for 1 second.
+	// Meant to let the mech players use the door entrance in case they got stuck once again.
+	+) A small Mech Upgrade is here, Auto-Repair!
+	// A stereotypical regeneration upgrade that it does'nt take too long to work!
+	+) Soulspheres and Megaspheres, (With the Mech-Sync upgrade) are now cappable to heal the Mech units!
+	// Although, they don't over heal it, sadly.
+	*) Other small fixes...
+
+#### -) (2 - 6 / 11 / 2020) [Scalable Monster HP and Player Damage]
+	*) Game is getting high on players? Well now you can change the incremental scale for the monster health and the player damage!
+	// Since the game get's harder when the server gets more popularized, it's completly fair to add this.
+	// Both things works when the player count rises to 3 and adobe.
+	+) Added a bunch of cvars. All of them for the server.
+		-) sfp_monsterhpmult, to set an incremental percentage depending on players, in monster health.
+		-) sfp_monsterhpmult, to set an incremental percentage depending on players, in player damage.
+		-) sfp_dropcredits_delay, to change the delay time between droppings.
+		-) sfp_dropcredits_nostartcredits, to only drop the current credits without using the starting credits. Leave this activated to reduce exploits.
+	*) Some more fixes upon the game variables.
+
+#### -) (1 / 11 / 2020) [Hotfix 5]
+	*) Re-factorized the variable setting for each sf map.
+	*) Now, when a cvar is set to 0, the map will load the default variables.
+	*) SD maps have an editable time between waves, use sf_doorholdtime to change it!
+	*) SD maps will now sound the starting horn (and the timer beeps) once the game starts.
+	*) Some other fixes
+
+#### -) (30 - 31 / 10 / 2020) [Hotfix 4 + A Greedsphere]
+	+) Hidden on the game, only spawnable with summon command, but... Meet the greedsphere!
+	// x2 Credits for 15 seconds! (30 with the Player Up. Powerup Upgrade)
+	*) Fixed up the spawning tids for the SF maps, that should set the monsters correctly.
+	*) Just to add a little bit of softness for the SF02 map. Archons of hell and Dark Dogs(New!) will come to cause some grief!
+	// Not a big fan of the difficulty spike when the cyberdemons come.
+	*) Now the damage hud, can be streched depending on the aspect ratio!
+	*) Now, the batteries should'nt be revived by the archviles.
+	+) Added the cvars: sfp_minrecap (Minimum monsters before recapturing) and sfp_monstercap (Max monsters)
+
+#### -) (28 - 29 / 10 / 2020)
+	*) Re-factorized the inventoy item's decorate. Less code, more read.
+	+) Added the fp_puhud.acs, showing you the current powerups you got in your blood!
+	*) Now, when going no-hud, the old hud will not be shown.
+
+#### -) (24 / 10 / 2020) [Hotfix #3]
+	*) Clearing some of the few log messages I left out.
+	*) Deploy TID Assigner is set to the dispensers too.
+	*) Build.py should compile the acs before packing.
+
+#### -) (22 - 23 / 10 / 2020) [Hotfix #2]
+	*) Removed the welcome messages from the server log.
+	*) Gave some fixes on the soundtrack mixer script, now it should work properly.
+	*) Guardian wave can now terminate the sector management main loop script.
+	*) Turrets and drones TID assignment has been separated from the player tid. For the monster kill script fixes.
+	*) Small fixes on the credit display thing.
+	*) Auto-Use scripts should act faster now.
+	*) Resetted the monster limit to 250.
+	*) Now the Turrets and Drones will properly grant credits. 
+		// For the drones, they have a 25% to grant a kill (experience).
+	*) Boss-waves should grant more credits and experience now.
+	+) Added the fp_cons.acs, just to hold all the variables. (Not being used for now.)
+
+#### -) (21 / 10 / 2020) [Some late fixes]
+	*) Modified the Kill-Streak Clientside scripts, now the number should scale pretty well on clientside.
+	*) Some small touches on the sector management scripts.
+	*) Forgot to show the player upgrades for the health terminal, now it should be shown
+
 #### -) (20 / 10 / 2020) [Quick Fixes & More Fixes]
 	*) Rewritten the sector management script for the sf/cf maps.
 	*) The non-risked cores, will be de-activated. (unless i find a way to animate them in this state) For the archvile protection, and for not breaking the sector flow so quickly.

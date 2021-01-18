@@ -1,22 +1,24 @@
 
 // Mech upgrade tokens
-actor MechUp_armor 				: Integer {}
-actor MechUp_speed 				: Integer {}
-actor MechUp_nails 				: Integer {}
-actor MechUp_rockets 			: Integer {}
-actor MechUp_LifeSave 			: Integer {}
-actor MechUp_selfdestruct 		: Integer {}
+actor MechUp_armor 				: Integer { Inventory.MaxAmount 5 }
+actor MechUp_speed 				: Integer { Inventory.MaxAmount 3 }
+actor MechUp_nails 				: Integer { Inventory.MaxAmount 5 }
+actor MechUp_rockets 			: Integer { Inventory.MaxAmount 5 }
+actor MechUp_LifeSave 			: Boolean {}
+actor MechUp_selfdestruct 		: Boolean {}
+actor MechUp_autorepair 		: Integer { Inventory.MaxAmount 5 }
+actor MechUp_efficiency			: Boolean {}
 
 // Unit upgrade tokens
-actor PlayUp_PowUpUpgrade 		: Integer {}
-actor PlayUp_MechSync 			: Integer {}
-actor PlayUp_ExpansiveRestock 	: Integer {}
-actor PlayUp_BodyEnhancement 	: Integer {}
-actor PlayUp_ArmorRepair		: Integer {}
-actor PlayUp_SpawnShield		: Integer {}
-actor PlayUp_HealCoins			: Integer {}
-actor PlayUp_Prometeo			: Integer {}
-actor PlayUp_RuneSync 			: Integer {}
+actor PlayUp_PowUpUpgrade 		: Boolean {}
+actor PlayUp_MechSync 			: Boolean {}
+actor PlayUp_ExpansiveRestock 	: Boolean {}
+actor PlayUp_BodyEnhancement 	: Boolean {}
+actor PlayUp_ArmorRepair		: Boolean {}
+actor PlayUp_SpawnShield		: Boolean {}
+actor PlayUp_HealCoins			: Boolean {}
+actor PlayUp_Prometeo			: Boolean {}
+actor PlayUp_RuneSync 			: Boolean {}
 
 Actor SpecialTeleportFog : TeleportFog replaces TeleportFog {
 	States{
@@ -27,11 +29,17 @@ Actor SpecialTeleportFog : TeleportFog replaces TeleportFog {
 	}
 }
 
+ACTOR PlayUp_Spawnshield_Power : PowerInvulnerable
+{
+	Powerup.Duration -10
+	Powerup.ColorMap 0.2,0.2,0.0, 1.0,1.0,1.0
+}
+
 Actor PlayUp_SpawnShield_Activate : PowerupGiver {
   +INVENTORY.AUTOACTIVATE
   +INVENTORY.ALWAYSPICKUP
   Inventory.MaxAmount 0
-  Powerup.Type "Invulnerable"
+  Powerup.Type "PlayUp_Spawnshield_Power"
   Powerup.ColorMap 0.2,0.2,0.0, 1.0,1.0,1.0
   Powerup.Duration -10
   Inventory.PickupMessage "Spawn-shield activated!" // "Invulnerability!"
@@ -43,10 +51,21 @@ Actor PlayUp_SpawnShield_Activate : PowerupGiver {
   }
 }
 
-Actor PlayUp_Prometeo_Activate_Invul : PlayUp_SpawnShield_Activate {
+ACTOR PlayUp_Prometeo_Power_Invul : PowerInvulnerable
+{
   Powerup.ColorMap 0.0,0.2,0.2, 1.0,1.0,1.0
   Powerup.Duration -20
   Inventory.PickupMessage "Prometeo protocol invul powerup!"
+}
+
+Actor PlayUp_Prometeo_Activate_Invul : PowerupGiver {
+  +INVENTORY.AUTOACTIVATE
+  +INVENTORY.ALWAYSPICKUP
+  Powerup.ColorMap 0.0,0.2,0.2, 1.0,1.0,1.0
+  Powerup.Duration -20
+  Inventory.PickupMessage "Prometeo protocol invul powerup!"
+  Powerup.Type PlayUp_Prometeo_Power_Invul
+  
 }
 
 ACTOR PlayUp_Prometeo_Power_2xDmg : PowerDamage

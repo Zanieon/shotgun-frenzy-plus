@@ -13,12 +13,12 @@
 #import "fp_sd.acs" // Modulize that crap!
 
 #include "zcommon.acs"
-#include "samu_tools.ach"
+#include "samu_tools.acs"
 
 //map setup
 script 91 OPEN
 {
-	setupTerminals();
+	SFPlus_DefaultVars();
 	f_SurvivalLastLevel = 11;
 }
 

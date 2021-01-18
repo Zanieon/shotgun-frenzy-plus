@@ -33,7 +33,7 @@
 // load demon wave set, for custom sets look in the ACS directory for any fa files
 #import "fa_SSD01.acs"
 #include "zcommon.acs"
-#include "samu_tools.ach"
+#include "samu_tools.acs"
 
 //map setup
 script 91 OPEN
@@ -48,8 +48,6 @@ script 91 OPEN
 
 	f_AdaptiveSpawning = 0;
 	f_Cacodemons = 0;
-
-        readconsole();
 
 	f_AllowNuke =   0;
 	f_AllowIon =	0;

@@ -16,7 +16,9 @@
 #import "fc_AStr.acs"
 
 #include "zcommon.acs"
-#include "samu_tools.ach"
+#include "acsutils.acs"
+#include "samu_tools.acs"
+
 
 // build
 script 300 (void)
@@ -49,14 +51,14 @@ script 300 (void)
     sector_setcolor(291, 100, 100, 255);
     
     // set techflag
-	Tech_Set(FP_TECH_MECHFA, FP_TECHF_DONE);
+	Tech_Set(TECH_MECHFA, TECHF_DONE);
     
     // open heavy vehicle bay
     door_open(155, 50);
     
     // check bridge
     delay(35 * 2);
-    if (Tech_isDone(FP_TECH_MARCOM) &&  Tech_isDone(FP_TECH_MECHFA)
+    if (Tech_isDone(TECH_MARCOM) &&  Tech_isDone(TECH_MECHFA)
 		&& c_BridgeStatus_4 == 0 && f_Gametype != 5)
     {
         c_BridgeStatus_4 = 1;
@@ -72,7 +74,7 @@ script 304 (void)
     int l_IonCannonTime;
     
     // switch off flags
-    Tech_SetDone(FP_TECH_MARCOM_IONCAN, FP_TECHF_LOCK);
+    Tech_SetDone(TECH_MARCOM_IONCAN, TECHF_LOCK);
     
     int slot = Notify_QueueFreeSpace();
 	ACS_NamedExecuteAlways("SFPlus_TimerScript",0, FP_PTID_IONCAN_1, 5, slot);
@@ -96,7 +98,7 @@ script 304 (void)
 	ACS_NamedExecuteAlways("SFPlus_ProgressScript",0, FP_PTID_IONCAN_2, 50, slot);
 	do{ delay(1); }while (p_TipProcess[slot]); // Wait for it.
     
-	Tech_Set(FP_TECH_MARCOM_IONCAN, FP_TECHF_DONE);
+	Tech_Set(TECH_MARCOM_IONCAN, TECHF_DONE);
 }
 
 
@@ -104,25 +106,66 @@ script 304 (void)
 script 305 (void)
 {
     // change flags
+	p_MechTimer[playernumber()] = 0;// Initialize timer.
+	p_TankSlot[playernumber()] = 1;
+	
     f_CenterTip("Mech Purchased!");
-    f_TipShow("VEHIC", "", "Has purchased a War Mech!", 10);
+    //f_TipShow("VEHIC", "", "Has purchased a War Mech!", 10);
+	Notify_Player("Has Pursached a Mech!", "VEHIC", 1);
 	LocalAmbientSound("veh/tankstartup",128);
 	delay(35);
     localambientsound("veh/tankshutdown", 128);
 }
 
+Script "SFPlus_MechHud" (int move_state) Clientside
+{
+	if(consolePlayerNumber() == PlayerNumber() && PlayerInGame(PlayerNumber())){
+		str img;
+		switch(move_state){
+			case 1:
+				img = "TANKH1";
+			break;
+			case 2:
+				img = "TANKH2";
+			break;
+			case 3:
+				img = "TANKH3";
+			break;
+			default:
+				img = "CONFONT";
+			break;
+		}
+		sethudsize(SFHUD_WIDTH, SFHUD_HEIGHT, 1);
+		setfont(img);
+		hudmessage(s:"a"; HUDMSG_LAYER_UNDERHUD, -201, 0, 400.0, 0.1, 1.0);
+	}
+}
+
 // Display Tank Huddy Hud.
 script 308 (void)
 {
-	sethudsize(s_ScreenSize[0], s_ScreenSize[1], s_ScreenSize[2]);
+	int mech_state;
 	while(p_TankSlot[playernumber()] == 2){
-		if (GetPlayerInput(-1, INPUT_YAW) < 0)           setfont("TANKH3");
-		else if (GetPlayerInput(-1, INPUT_YAW) > 0)      setfont("TANKH2");
-		else setfont("TANKH1");
+		if (GetPlayerInput(-1, INPUT_YAW) < 0)           mech_state = 3;
+		else if (GetPlayerInput(-1, INPUT_YAW) > 0)      mech_state = 2;
+		else mech_state = 1;
 			
-		hudmessage(s:"a"; 0, 201, 0, 400.0, 0.1, 1.0);
+			ACS_NamedExecuteAlways("SFPlus_MechHud", 0, mech_state );
 		delay(6);
 	}
+	ACS_NamedExecuteAlways("SFPlus_MechHud", 0, 0);
+}
+
+function str ProgressDot(int amount, int progress, int base){
+	int intervals = 100 / amount;
+	int now = progress * 100 / base;
+	int dotamount = now / intervals;
+	str dotres = ".";
+	for(int i = 0; i < dotamount; i++){
+		dotres = strparam(s:dotres, s:".");
+	}
+	
+	return dotres;
 }
 
 // enter tank
@@ -137,68 +180,97 @@ script 306 (void)
 	
 	setfont("BIGFONT");
     hudmessage(s:
-	"\caTo \cgexit the \caMech, \cbwalk up to the entrance of the Mech Factory.\
-	\n\n\caOr press \cguse \cato \cbteleport yourself \caback to safety!\
+	"\caTo \cgexit \cathe Mech, \cbwalk up to the entrance of the Mech Factory\
+\ or hold \cguse \ca for 1 second!\
 	\n\n\cbQuit early \cato \cgavoid death!\
 	\n\n\cbUpon exiting, the armor will be fully repaired \cafor your next use.\
 	\n\n\cgPrimary fire \cafor your \cbNails\
-	\n\n\cgSecondary Fire \cafor your \cbRockets \cg(if you got the upgrade)\
+	\n\n\cgSecondary Fire \cafor your \cbRockets\
 	\n\n\n\ci Now give em' Hell!"
 	; HUDMSG_TYPEON, 0, 0, 0.5, 0.4, 6.0, 0.03, 0.5);
 	
-	f_TipShow("VEHIC", " War Mech State", "Deployed for action!", 10);
+	//f_TipShow("VEHIC", " War Mech State", "Deployed for action!", 10);
+	Notify_PlayerEX(0, " Mech State", "Deployed!", "VEHIC", 0);
 	
     // welcome message
     
     // change flags
     p_TankSlot[playernumber()] = 2;
+	p_MechTimer[playernumber()] = -1;// Initialize timer.
     
     // teleport to new location
     teleport(142, 0, 0);
     
     // change skin and class
     //morphactor(0, "TankPlayer", "", 999999, 2, "", "");
+	takeinventory("MechMorph",1); // Just in case
     giveinventory("MechMorph",1);
-    if (p_MechUpgradeWeapons[playernumber()] == 0){
-    	giveinventory("TankGun", 1);
-    }
-    else{
-    	giveinventory("TankGunAdvanced", 1);
-    }
+    giveinventory("TankGun", 1);
 	
-    
-    // give more health
-	/*
-    if (p_MechUpgradeArmor[playernumber()] == 0){
-   	 setactorproperty(0, APROP_HEALTH, 2500);
-    }
-    else{
-   	 setactorproperty(0, APROP_HEALTH, 3500);
-    }*/
+	//Update Stats
 	setactorproperty(0, APROP_HEALTH, 1500 + 900 * checkinventory("MechUp_Armor"));
-	SetActorProperty(0, APROP_SPEED, 0.5 + 0.25 * checkInventory("MechUp_Speed"));
-    
-    // setup tank hud
-    sethudsize(s_ScreenSize[0], s_ScreenSize[1], s_ScreenSize[2]);
+	SetActorProperty(0, APROP_SPEED, 0.7 + 0.1 * checkInventory("MechUp_Speed"));
+	setactorproperty(0, APROP_DamageFactor, 1.0);
     
     // open marine command doors
     door_raise(347, 10, 150, 0);
     
-    delay(5);
 	//setActivatortoPlayer(playernumber());
 	ACS_ExecuteAlways(308, 0);
+	int ticks_use;
+	int exit_progress;
+	str dots;
+	int ticks_repair;
+	int max_armor = 1500 + 900 *checkinventory("MechUp_Armor");
+	int auto_repair_heal = 4*checkInventory("MechUp_AutoRepair");
+	int auto_repair_delay = 35 - 15*CheckInventory("MechUp_Efficiency"); 
+	int hp, diff;
     while(p_TankSlot[playernumber()] == 2 && g_Status != 299)
     {
-			// [Samu] Press use to get out of the tank!
-		if(GetPlayerInput(-1, INPUT_BUTTONS) & BT_USE) ACS_ExecuteAlways(307, 0);
+		if(!CheckInventory("TankGun")){ // Kill the bugs
+			GiveInventory("TankGun", 1);
+		}
+		
+		if(!CheckWeapon("TankGun")){ // Kill the bugs
+			SetWeapon("TankGun");
+		}
+		// [Samu] Hold use for 3 seconds to get out of the tank!
+		if(GetPlayerInput(-1, INPUT_BUTTONS) & BT_USE) ticks_use++;
+		else ticks_use = 0;
+		
+		
+		if(ticks_use != 0){
+			dots = ProgressDot(3, ticks_use, 35);
+			f_CenterTip(strparam(s:dots, s:"Ejecting", s:dots));
+		}
+		else ClearHudMessage(78);
+		
+		if(ticks_use == 35) {
+			f_CenterTip("Ejection sucessful.");
+			ACS_ExecuteAlways(307, 0);
+		}
+		
+		if(CheckInventory("MechUp_AutoRepair")){
+			// [Samu] Auto-repair the mech, because im an impacient person.
+			ticks_repair++;
+			if(ticks_repair % auto_repair_delay == 0){ // Heh
+				hp = GetActorProperty(0, APROP_HEALTH);
+				if(hp < max_armor){
+					diff = max_armor - hp;
+					if(diff < auto_repair_heal) setactorproperty(0, APROP_HEALTH, hp + diff);
+					else 		  				setactorproperty(0, APROP_HEALTH, hp + auto_repair_heal);
+				}
+				ticks_repair = 0;
+			}
+		}
+		
         
-        // switch to tank weapon
-       	 setweapon("TankGun");
         
-        // display tank health
+        
+        // display tank health and upgrades.
         setfont("CONFONT");
-        hudmessage(s:"Armor: ", d:getactorproperty(0, APROP_HEALTH); 0, 202, CR_BLUE, 128.1, 300.1, 1.0);
-        
+        hudmessage(s:"Armor: \cv", d:getactorproperty(0, APROP_HEALTH), s:" / ", d:max_armor
+				,s:"\n\n\c-", s:MechUp_ReportUps(true); 0, 202, CR_lightBlue, 128.1, 300.1, 1.0);
         delay(1);
     }
 	
@@ -210,21 +282,43 @@ script 306 (void)
 	}
 }
 
+Script "SFPlus_MechHeal" (int amount) {
+	// Called by the soulsphere and megasphere, for a stimpack-esque item.
+	int max_armor = 1500 + 900 * checkinventory("MechUp_Armor");
+	int hp = getactorproperty(0, APROP_HEALTH);
+	int diff = max_armor - hp;
+	if(diff < amount) setactorproperty(0, APROP_HEALTH, hp + diff);
+	else 		  	  setactorproperty(0, APROP_HEALTH, hp + amount);
+}
+
 script 309 (void){
 	TakeInventory("TankGun", 1);
 	TakeInventory("TankGunAdvanced", 1);
-    f_TipShow("VEHIC", " War Mech State", "Has been destroyed!", 10);
+    //f_TipShow("VEHIC", " War Mech State", "Has been destroyed!", 10);
+	Notify_PlayerEX(0, " Mech State", "Destroyed!", "VEHIC", 3);
     // purge
     setfont("CONFONT");
-    hudmessage(s:""; 0, 201, 0, 400.0, 0.1, 1.0);
+    ACS_NamedExecuteAlways("SFPlus_MechHud", 0, 0);
+	
 	p_TankSlot[playernumber()] = 99;
-	delay(35 * 5);
-	f_CenterTip ("Your mech has been destroyed and is now repairing...");
-	delay(35 * 2);
-	f_CenterTip ("Your mech will be ready for use in 2 minutes...");
-	delay(35 * 60 * 2 - 35 * 7);
+	p_MechTimer[playernumber()] = (35 * 60 * 2) + (35*30) - (35*30)*CheckInventory("MechUp_Efficiency");
+	
+	int msgtimer;
+	while(p_MechTimer[playernumber()] > 0){
+		
+		if(msgTimer == (35 * 5)) 
+			f_CenterTip ("Your mech has been destroyed and is now repairing...");
+		else if (msgTimer == (35 * 7)) 
+			f_CenterTip ("Your mech will be ready for use in 2 minutes...");
+			
+		p_MechTimer[playernumber()] --;
+		msgtimer++;
+		delay(1);
+	}
+	
 	p_TankSlot[playernumber()] = 1;
-	f_TipShow("VEHIC", " War Mech State", "Reparings completed!", 10);
+	//f_TipShow("VEHIC", " War Mech State", "Reparings completed!", 10);
+	Notify_PlayerEX(0, " Mech State", "Repaired!", "VEHIC", 1);
 	f_CenterTip ("Your mech is now ready for deployment!");
 
     
@@ -235,52 +329,83 @@ script 309 (void){
 // exit tank
 script 307 (void)
 {
-	f_TipShow("VEHIC", " War Mech State", "Returned for Maintenance.", 10);
+	//f_TipShow("VEHIC", " War Mech State", "Returned for Maintenance.", 10);
+	Notify_PlayerEX(0, " Mech State", "Returned for Maintenance", "VEHIC", 0);
 	
-    // change flags
-    p_TankSlot[playernumber()] = 1;
-             takeinventory("MechMorph",1);
-    Unmorphactor(0, 1);
+	int max_armor = 1500 + 900 * checkinventory("MechUp_Armor");
+	int hp = getactorproperty(0, APROP_HEALTH);
 	
-	    
-    // purge
-    setfont("CONFONT");
-    hudmessagebold(s:""; 0, 201, 0, 400.0, 0.1, 1.0);
+	int dmg_percent = ut_floor(100.0 - FixedMul(fixedDiv(hp*1.0,max_armor*1.0),100.0));
+	int extra_delay = (fixedDiv(((90 * dmg_percent) / (1 + 2*CheckInventory("MechUp_Efficiency"))), 100.0)>>16);
+	
+	int repair_delay = 35 * (10 + extra_delay);
+	//log(s:"Extra Delay: ", d:repair_delay);
+	//print(d:(repair_delay/35), s:" Seconds.");
+	//Quick maths!
+	p_MechTimer[playernumber()] = repair_delay;
+	p_TankSlot[playernumber()] = 99;
+	delay(1);
+	
+	// purge
+    ACS_NamedExecuteAlways("SFPlus_MechHud", 0, 0);
+	
 	if(checkInventory("MechUp_LifeSave"))
 		giveInventory("StartingPoint", 1); // teleports you back to safety!
-    
-    // fix players health
-    acs_execute(106, 0, 1, 1, 1);
 	
-	ACS_Execute(56,0,p_LastWeap[playernumber()],0,0);
-	
+	takeinventory("MechMorph",1);
+    Unmorphactor(0, 1);
 	takeinventory("TankGun",1);
     takeinventory("TankGunAdvanced",1);
+	
+	delay(1);
+    // fix players health
+    acs_execute(106, 0, 1, 1, 1);
+	delay(5);
+	ACS_Execute(56,0,p_LastWeap[playernumber()],0,0);
+	
+	int msgtimer;
+	while(p_MechTimer[playernumber()] > 0){
+		
+		if(msgTimer == (35 * 5)) 
+			f_CenterTip ("Your mech should be ready in a few seconds..");
+			
+		p_MechTimer[playernumber()] --;
+		msgtimer++;
+		delay(1);
+	}
+	
+	f_CenterTip ("Your mech is ready to go!");
+    // change flags
+	p_MechTimer[playernumber()] = 0;
+    p_TankSlot[playernumber()] = 1;
+    
 }
 
+int fp_mech_onentrance[32];
 // exit tank (map version)
 script 31 (void)
 {
-	
     // player is tank?
     if (p_TankSlot[playernumber()] == 2){
-	f_TipShow("VEHIC", " War Mech State", "Returned for Maintenance.", 10);
-    // change flags
-    p_TankSlot[playernumber()] = 1;
-             takeinventory("MechMorph",1);
-    Unmorphactor(0, 1);
-	
-	// purge
-	setfont("CONFONT");
-    hudmessagebold(s:""; 0, 201, 0, 400.0, 0.1, 1.0);
-    
-    // fix players health
-    acs_execute(106, 0, 1, 1, 1);
-    
-	ACS_Execute(56,0,p_LastWeap[playernumber()],0,0);
-	
-	takeinventory("TankGun",1);
-    takeinventory("TankGunAdvanced",1);
+		if(!fp_mech_onentrance[playernumber()]){
+			fp_mech_onentrance[playernumber()] = 1;
+			print(s:"Press use to get off the tank");
+			int count = 0;
+			while(count < (35*3)){
+				//log(s:"Count: ", d:count);
+				if(GetPlayerInput(-1, INPUT_BUTTONS) & BT_USE){
+					fp_mech_onentrance[playernumber()] = 0;
+					ACS_Terminate(306, 0);
+					ACS_Execute(307,0);
+					delay(5);
+					f_CenterTip("You exited the tank.");
+					break;
+				}
+				delay(1);
+				count++;
+			}
+			fp_mech_onentrance[playernumber()] = 0;
+		}
     }
 }
 
@@ -296,10 +421,9 @@ script 310 (int l_Type)
 // tank emergency exit from marine command (the player might get locked inside)
 script 158 (void)
 {
-    if (c_Techflag[3] == 1)
+    if (Tech_isDone(TECH_MECHFA))
     {
         door_raise(347, 10, 150, 0);
-        setweapon("TankGun");
     }
 }
 
@@ -307,28 +431,14 @@ script 158 (void)
 
 script "AnnounceMechUpgrade" (int which){
 	str upg;
-	if(MechUp_getMax(which) != 0)	
+	if(MechUp_getMax(which) != 1)	
 		upg = strparam(s:MechUp_getName(which), s:" Lv.", d:CheckInventory(MechUp_getActor(which)));
 	else upg = strparam(s:MechUp_getName(which));
-	str msg = strparam(s:"Installed the ", s:upg ,s:"!");
+	str msg = strparam(s:"Installed the ", s:upg ,s:" Upgrade!");
 
-    f_TipShow("VEHICA", " Mech upgrade!", msg, 10);
-    delay(35);
-    localambientsound("veh/tankshutdown", 125);
-}
-
-script 421 (void){
-	p_MechUpgradeWeapons[playernumber()] = 1;
-    f_TipShow("VEHICA", "", "Has upgraded their Mechs weapons...", 10);
-    localambientsound("vehicle/mechupgrade", 125);
-    delay(35);
-    localambientsound("veh/tankshutdown", 125);
-}
-// mech upgrade: armor
-script 422 (void){
-	p_MechUpgradeArmor[playernumber()] = 1;
-    f_TipShow("VEHICB", "", "Has upgraded their Mechs armor...", 10);
-    localambientsound("vehicle/mechupgrade", 125);
+    //Notify_Message(msg, " Mech upgrade!", "VEHICA", 10);
+	Notify_PlayerEX(0, " got a Mech Upgrade!", msg, "VEHICA", 0);
+	
     delay(35);
     localambientsound("veh/tankshutdown", 125);
 }

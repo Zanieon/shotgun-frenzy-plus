@@ -27,7 +27,9 @@
 #libdefine FP_ITEM_T_RUNE 4
 
 int fp_Items[FP_ITEM_NUM][9];
+int fp_sell_on_armory[FP_ITEM_NUM];
 int fp_LastItem = 0;
+int fp_LastArmoryItem = 0;
 
 // Item properties
 // 0) Item Actor
@@ -36,6 +38,7 @@ int fp_LastItem = 0;
 
 function void SFPlus_DefineItems(void){
 	fp_LastItem = 0;
+	fp_LastArmoryItem = 0;
 	Item_Add_Powerup("Inventory_Soulsphere", "Soulsphere", "soulsphere", 3, "ITM1A0", 
 		"Heals and overheals you 100 HP");
 	Item_Add_Powerup("Inventory_Megasphere", "Megasphere", "megasphere", 3, "ITM2A0", 
@@ -61,13 +64,18 @@ function void SFPlus_DefineItems(void){
 	Item_Add_deploy("Inventory_TurretBullet", "Bullet Turret", "turret_bullet", 8, "CM40", 
 		"Basic and Cheap.");
 	Item_Add_deploy("Inventory_TurretRocket", "Rocket Turret", "turret_rocket", 8, "CM41", 
-		"Kinda slow but launches rockets.");
+		"Rock it with some rockets");
 	Item_Add_deploy("Inventory_TurretPlasma", "Plasma Turret", "turret_plasma", 8, "CM42", 
-		"Plasmatize those demons.");
+		"Plasmatize those demons");
 	Item_Add_deploy("Inventory_TurretRail", "Rail Turret", "turret_rail", 8, "CM43", 
-		"Rails for the enemy lines.");
+		"Rails for the enemy lines");
 	Item_Add_deploy("Inventory_TurretFlame", "Flame Turret", "turret_flame", 8, "CM47", 
-		"Ignites the nearest foes.");
+		"Ignites the nearest foes");
+	Item_Add_deploy("Inventory_TurretChaingun", "Chaingun Turret", "turret_chaingun", 8, "CC14", 
+		"No demon will outsmart these bullets.");
+	Item_Add_deploy("Inventory_TurretShotgun", "Shotgun Turret", "turret_shotgun", 8, "CC13", 
+		"Spready attack, fires twice.");
+	
 }
 
 
@@ -95,6 +103,13 @@ function void Item_Add_Inv(str actor, str name, str price, int max, str icon,str
 }
 
 function void Item_Add(int type, str actor, str name, str price, int max, str icon, str desc){
+	
+	if(type == FP_ITEM_T_DEPLOY || type == 0){
+		// Index the items to the more items page in armory.
+		fp_sell_on_armory[fp_LastArmoryItem] = fp_LastItem;
+		fp_LastArmoryItem++;
+	}
+	
 	fp_Items[fp_LastItem][0] = type;
 	fp_Items[fp_LastItem][1] = actor;
 	fp_Items[fp_LastItem][2] = name;
